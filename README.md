@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-My Claude Code plugins, MCP servers, and settings configuration.
+My Claude Code plugins, MCP servers, custom HUD statusline, and settings configuration.
 
 ## Quick Install
 
@@ -11,6 +11,67 @@ bash install.sh
 ```
 
 Or manually install each component (see below).
+
+---
+
+## Custom HUD Statusline
+
+A lightweight statusline displayed at the bottom of Claude Code, showing real-time session info at a glance.
+
+### Screenshot
+
+```
+Opus 4.6 │ ━━━───── 36% 72k/200k │ $1.15 ↑12k ↓8k │ ⏳ 5h ━━─── 42% ↻56m 7d ━──── 13% S ───── 3% │ 19m7s │ +189 -48 │ 🔧 9/26 plugins · 1 MCP
+```
+
+### HUD Segments (Left → Right)
+
+| Segment | Example | Description |
+|---------|---------|-------------|
+| **Model** | `Opus 4.6` | Current model name, color-coded (Opus=purple, Sonnet=cyan, Haiku=green) |
+| **Context** | `━━━───── 36% 72k/200k` | Context window usage — thin progress bar + percentage + tokens used/total. Red warning ⚠ at 90%+ |
+| **Cost + Tokens** | `$1.15 ↑12k ↓8k` | Session cost + cumulative input(↑)/output(↓) tokens |
+| **5h Quota** | `5h ━━─── 42% ↻56m` | 5-hour rolling session limit — progress bar + usage% + reset countdown |
+| **7d Quota** | `7d ━──── 13%` | 7-day weekly limit (all models combined) |
+| **Sonnet Quota** | `S ───── 3%` | 7-day Sonnet-specific weekly limit |
+| **Duration** | `19m7s` | Session running time |
+| **Lines** | `+189 -48` | Lines added (green) / removed (red) in this session |
+| **Plugins** | `🔧 9/26 plugins · 1 MCP` | Enabled / installed plugins + active MCP server count |
+
+### Color Indicators
+
+Progress bars and percentages change color based on usage level:
+
+| Usage | Color |
+|-------|-------|
+| < 50% | Green |
+| 50–74% | Yellow |
+| 75–89% | Bright Yellow |
+| ≥ 90% | Red (+ ⚠ warning for context) |
+
+### How It Works
+
+- **Context, cost, tokens, duration, lines** — read from Claude Code's statusLine stdin JSON
+- **Subscription quotas (5h/7d/Sonnet)** — fetched from Anthropic OAuth API (`/api/oauth/usage`), cached locally for 60s
+- **Plugin/MCP counts** — read from `~/.claude/settings.json` and `~/.claude/plugins/installed_plugins.json`
+- **Credentials** — read from macOS Keychain (`Claude Code-credentials`) with file fallback, auto token refresh
+
+### Manual Install (HUD Only)
+
+```bash
+# Copy HUD script
+mkdir -p ~/.claude/hud
+cp hud/custom-hud.mjs ~/.claude/hud/
+
+# Add statusLine to settings.json (or merge manually)
+# Ensure settings.json contains:
+#   "statusLine": {
+#     "type": "command",
+#     "command": "node ~/.claude/hud/custom-hud.mjs"
+#   }
+```
+
+Restart Claude Code to activate.
 
 ---
 
@@ -64,21 +125,6 @@ claude /plugin install bash-language-server@claude-code-lsps # Bash
 claude /plugin install intelephense@claude-code-lsps    # PHP
 ```
 
-### Oh-My-ClaudeCode (HUD + Agent System)
-
-32 specialized agents with automatic model routing, status HUD, and team coordination.
-
-```bash
-# Add marketplace
-claude /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-
-# Install
-claude /plugin install oh-my-claudecode@omc
-
-# Setup (configures HUD + agents)
-claude /omc-setup
-```
-
 ---
 
 ## MCP Servers
@@ -90,7 +136,6 @@ All MCP servers are auto-configured by their plugins. No manual `.mcp.json` edit
 | `mcp-search` | `claude-mem` | `search`, `timeline`, `get_observations`, `smart_search`, `smart_unfold`, `smart_outline` |
 | `context7` | `superpowers` (external) | `resolve-library-id`, `query-docs` (up-to-date library documentation) |
 | `smart-search` | `superpowers` | `web_search` (multi-engine: Kagi + Tavily) |
-| `omc bridge` | `oh-my-claudecode` | Agent bridge + team MCP for multi-agent coordination |
 
 ### context7
 
@@ -130,6 +175,10 @@ Copy to `~/.claude/settings.json`:
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/hud/custom-hud.mjs"
+  },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "superpowers@claude-plugins-official": true,
@@ -146,18 +195,8 @@ Copy to `~/.claude/settings.json`:
 
 Key settings:
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`: Enables multi-agent team coordination (TeamCreate, SendMessage, etc.)
+- `statusLine`: Custom HUD command — runs `custom-hud.mjs` to render the statusline
 - `enabledPlugins`: Plugins that are active in every session
-
-### Oh-My-ClaudeCode Config
-
-After running `/omc-setup`, the config is stored at `~/.claude/.omc-config.json`:
-
-```json
-{
-  "defaultExecutionMode": "ultrawork",
-  "setupVersion": "4.5.1"
-}
-```
 
 ---
 
@@ -170,7 +209,6 @@ After running `/omc-setup`, the config is stored at `~/.claude/.omc-config.json`
 | `planning-with-files` | [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files) | File-based task planning |
 | `thedotmack` | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory |
 | `claude-code-lsps` | [boostvolt/claude-code-lsps](https://github.com/boostvolt/claude-code-lsps) | Language server plugins (20+ languages) |
-| `omc` | [Yeachan-Heo/oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) | HUD, agents, model routing |
 
 Add all marketplaces:
 ```bash
@@ -179,7 +217,6 @@ claude /plugin marketplace add https://github.com/anthropics/claude-plugins-offi
 claude /plugin marketplace add https://github.com/OthmanAdi/planning-with-files
 claude /plugin marketplace add https://github.com/thedotmack/claude-mem
 claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
-claude /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
 ```
 
 ---

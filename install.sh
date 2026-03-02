@@ -1,11 +1,11 @@
 #!/bin/bash
-# Claude Code Plugins & MCP Setup Script
+# Claude Code Plugins & HUD Setup Script
 # Usage: bash install.sh
 
 set -e
 
 echo "=========================================="
-echo " Claude Code Plugins & MCP Installer"
+echo " Claude Code Plugins & HUD Installer"
 echo "=========================================="
 echo ""
 
@@ -22,7 +22,6 @@ claude /plugin marketplace add https://github.com/anthropics/claude-plugins-offi
 claude /plugin marketplace add https://github.com/OthmanAdi/planning-with-files
 claude /plugin marketplace add https://github.com/thedotmack/claude-mem
 claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
-claude /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
 
 echo ""
 echo "[2/7] Installing core plugins..."
@@ -46,12 +45,15 @@ claude /plugin install yaml-language-server@claude-code-lsps
 claude /plugin install pyright-lsp@claude-plugins-official
 
 echo ""
-echo "[6/7] Installing Oh-My-ClaudeCode..."
-claude /plugin install oh-my-claudecode@omc
+echo "[6/7] Installing custom HUD statusline..."
+mkdir -p ~/.claude/hud
+cp hud/custom-hud.mjs ~/.claude/hud/
+echo "  Copied hud/custom-hud.mjs -> ~/.claude/hud/"
 
 echo ""
-echo "[7/7] Running OMC setup..."
-claude /omc-setup
+echo "[7/7] Applying settings..."
+cp settings.json ~/.claude/settings.json
+echo "  Copied settings.json -> ~/.claude/settings.json"
 
 echo ""
 echo "=========================================="
@@ -65,12 +67,16 @@ echo "  - frontend-design    (UI/web design)"
 echo "  - planning-with-files (structured task planning)"
 echo "  - claude-mem         (cross-session memory + MCP search)"
 echo "  - pyright + vtsls    (Python & TypeScript code intelligence)"
-echo "  - oh-my-claudecode   (HUD, agents, model routing)"
+echo ""
+echo "Custom HUD statusline:"
+echo "  Model | Context bar | Cost + tokens | 5h/7d/Sonnet quotas | Duration | Lines | Plugins"
 echo ""
 echo "MCP servers (auto-configured by plugins):"
 echo "  - claude-mem mcp-search  (persistent memory search)"
 echo "  - context7              (library documentation lookup)"
-echo "  - oh-my-claudecode MCP  (agent bridge + team coordination)"
+echo "  - smart-search          (multi-engine web search)"
+echo ""
+echo "Restart Claude Code to activate the HUD."
 echo ""
 echo "Optional: Install additional LSPs for other languages:"
 echo "  claude /plugin install gopls@claude-code-lsps"
