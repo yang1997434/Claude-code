@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 /**
- * Claude Code HUD v2.0.0 — Custom Statusline
- * 3-line layout matching community reference style:
+ * Claude Code HUD v2.1.0 — Custom Statusline
+ * 4-line grid layout with ●○ dot bars, RGB true color, vertical | alignment.
  *
- * Line 1: Opus 4.6 | 72,000 / 200k | 36% used 72,000 | 64% remain 128,000 | thinking: Off
- * Line 2: current: ●●○○○○○○ 23%   | weekly: ●○○○○○○○ 15%          | sonnet: ○○○○○○○○  4%  | opus: ○○○○○○○○  1%
- * Line 3: resets 6:00pm             | resets mar 7, 10:30am          | $1.15 ↑12k ↓8k · 19m7s · +189 -48 · 🔧 12/29 · 3 MCP
+ * Line 1: Opus 4.6  72k / 200k    | 36% used 72,000         | 64% remain 128,000
+ * Line 2: current: ●●○○○○○○ 32%   | weekly: ●○○○○○○○ 16%    | sonnet: ○○○○○○○○ 5%
+ * Line 3: resets 6pm               | resets mar 7, 3pm        | resets mar 7, 4pm
+ * Line 4: thinking: Off            | cost: $11.05 ↑120k ↓85k | 🔧 12/29 plugins · 1 MCP
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
+
+const VERSION = '2.1.0';
 
 // ── RGB True Colors ────────────────────────────────
 const rgb = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;

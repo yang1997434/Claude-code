@@ -1,7 +1,7 @@
 {
   "name": "claude-hud",
-  "version": "2.0.0",
-  "description": "Custom HUD statusline for Claude Code — 3-line layout with ●○ dot progress bars, RGB true color, subscription quotas, extra usage, thinking status, and more.",
+  "version": "2.1.0",
+  "description": "Custom HUD statusline for Claude Code — 4-line grid layout with ●○ dot progress bars, RGB true color, vertical | alignment, subscription quotas, thinking status, and more.",
   "author": {
     "name": "yang1997434",
     "url": "https://github.com/yang1997434"
