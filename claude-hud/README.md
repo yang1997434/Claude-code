@@ -18,35 +18,43 @@ Restart Claude Code to activate. The HUD auto-installs on first session via Sess
 
 ## What It Shows
 
+4-line grid layout with ●○ dot progress bars, RGB true color, and vertical `|` alignment:
+
 ```
-Opus 4.6 │ ━━━───── 36% 72k/200k │ $1.15 ↑12k ↓8k │ ⏳ 5h ━━─── 42% ↻56m 7d ━──── 13% S ───── 3% │ 19m7s │ +189 -48 │ 🔧 9/26 plugins · 1 MCP
+Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
+current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
+resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
+thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
 ```
 
-| Segment | Description |
-|---------|-------------|
-| **Model** | Current model, color-coded (Opus=purple, Sonnet=cyan, Haiku=green) |
-| **Context** | Context window usage bar + percentage + tokens |
-| **Cost** | Session cost + cumulative input/output tokens |
-| **Quotas** | 5h session / 7d weekly / Sonnet / Opus usage with mini bars |
-| **Duration** | Session running time |
-| **Lines** | Lines added/removed |
-| **Plugins** | Enabled/installed plugins + MCP server count |
+| Line | Description |
+|------|-------------|
+| **Line 1** | Model (color-coded) + token ratio + used% + remain% |
+| **Line 2** | Subscription quota ●○ dot bars (current / weekly / sonnet / opus) |
+| **Line 3** | Reset times in local time, column-aligned under quotas |
+| **Line 4** | Thinking mode + session cost + plugin/MCP counts |
+
+All lines share column widths — `|` separators are vertically aligned.
 
 ## Color Indicators
+
+●○ dot bars and percentages change color (RGB true color) based on usage:
 
 | Usage | Color |
 |-------|-------|
 | < 50% | Green |
 | 50–74% | Yellow |
-| 75–89% | Bright Yellow |
+| 75–89% | Orange |
 | ≥ 90% | Red (+ ⚠ warning for context) |
 
 ## How It Works
 
-- **Context, cost, tokens, duration, lines** — read from Claude Code's statusLine stdin JSON
-- **Subscription quotas (5h/7d/Sonnet/Opus)** — fetched from Anthropic OAuth API, cached locally for 60s
+- **Context, cost, tokens** — read from Claude Code's statusLine stdin JSON
+- **Subscription quotas (current/weekly/sonnet/opus)** — fetched from Anthropic OAuth API, cached locally for 60s
+- **Reset times** — displayed as local time (e.g. `6pm`, `mar 7, 3:30pm`)
+- **Thinking status** — read from `~/.claude/settings.json` (`alwaysThinkingEnabled`)
 - **Plugin/MCP counts** — read from `~/.claude/settings.json` and installed plugins
-- **Credentials** — macOS Keychain with file fallback, auto token refresh
+- **Credentials** — `CLAUDE_CODE_OAUTH_TOKEN` env (priority) → macOS Keychain → credentials file, with auto token refresh
 
 ## Requirements
 

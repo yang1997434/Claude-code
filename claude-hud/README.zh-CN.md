@@ -18,35 +18,43 @@ claude /plugin install claude-hud@Claude-code
 
 ## 显示内容
 
+4 行网格布局，●○ 圆点进度条，RGB 真彩色，`|` 垂直对齐：
+
 ```
-Opus 4.6 │ ━━━───── 36% 72k/200k │ $1.15 ↑12k ↓8k │ ⏳ 5h ━━─── 42% ↻56m 7d ━──── 13% S ───── 3% │ 19m7s │ +189 -48 │ 🔧 9/26 plugins · 1 MCP
+Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
+current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
+resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
+thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
 ```
 
-| 段落 | 说明 |
-|------|------|
-| **模型** | 当前模型名称，按类型着色（Opus=紫色, Sonnet=青色, Haiku=绿色） |
-| **上下文** | 上下文窗口使用进度条 + 百分比 + token 数 |
-| **费用** | 会话费用 + 累计输入/输出 token 数 |
-| **配额** | 5小时滚动 / 7天周度 / Sonnet / Opus 使用量（含迷你进度条） |
-| **时长** | 会话运行时间 |
-| **行数** | 新增/删除行数 |
-| **插件** | 已启用/已安装插件数 + MCP 服务器数 |
+| 行 | 说明 |
+|----|------|
+| **第 1 行** | 模型（着色）+ token 比例 + 已用% + 剩余% |
+| **第 2 行** | 订阅配额 ●○ 圆点条（current / weekly / sonnet / opus） |
+| **第 3 行** | 重置时间（本地时间），与配额列对齐 |
+| **第 4 行** | 思考模式 + 会话费用 + 插件/MCP 数量 |
+
+所有行共享列宽 — `|` 分隔符在 4 行间垂直对齐。
 
 ## 颜色指示
+
+●○ 圆点条和百分比根据使用率变色（RGB 真彩色）：
 
 | 使用率 | 颜色 |
 |--------|------|
 | < 50% | 绿色 |
 | 50–74% | 黄色 |
-| 75–89% | 亮黄色 |
+| 75–89% | 橙色 |
 | ≥ 90% | 红色（上下文还会显示 ⚠ 警告） |
 
 ## 工作原理
 
-- **上下文、费用、token、时长、行数** — 从 Claude Code statusLine 的 stdin JSON 读取
-- **订阅配额（5h/7d/Sonnet/Opus）** — 通过 Anthropic OAuth API 获取，本地缓存 60 秒
+- **上下文、费用、token** — 从 Claude Code statusLine 的 stdin JSON 读取
+- **订阅配额（current/weekly/sonnet/opus）** — 通过 Anthropic OAuth API 获取，本地缓存 60 秒
+- **重置时间** — 显示为本地时间（如 `6pm`、`mar 7, 3:30pm`）
+- **思考状态** — 从 `~/.claude/settings.json` 读取（`alwaysThinkingEnabled`）
 - **插件/MCP 数量** — 从 `~/.claude/settings.json` 和已安装插件读取
-- **凭据** — macOS 优先读取 Keychain，其他平台读取凭据文件，支持自动刷新 token
+- **凭据** — `CLAUDE_CODE_OAUTH_TOKEN` 环境变量（优先）→ macOS Keychain → 凭据文件，支持自动刷新 token
 
 ## 系统要求
 
