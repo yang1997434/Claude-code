@@ -18,6 +18,16 @@ Or manually install each component (see below).
 
 A lightweight statusline displayed at the bottom of Claude Code, showing real-time session info at a glance.
 
+### Plugin Install (Recommended)
+
+```bash
+# Add this repo as a marketplace
+claude /plugin marketplace add https://github.com/yang1997434/Claude-code
+
+# Install HUD plugin — auto-configures everything on first session
+claude /plugin install claude-hud@Claude-code
+```
+
 ### Screenshot
 
 ```

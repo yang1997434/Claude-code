@@ -1,0 +1,20 @@
+{
+  "name": "claude-hud",
+  "version": "1.0.0",
+  "description": "Custom HUD statusline for Claude Code — shows model, context bar, cost, subscription quotas, duration, lines changed, and plugin/MCP counts.",
+  "author": {
+    "name": "yang1997434",
+    "url": "https://github.com/yang1997434"
+  },
+  "repository": "https://github.com/yang1997434/Claude-code",
+  "license": "MIT",
+  "keywords": [
+    "hud",
+    "statusline",
+    "status-bar",
+    "usage",
+    "quota",
+    "context-window",
+    "claude-code"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Claude-code",
+  "owner": {
+    "name": "yang1997434",
+    "url": "https://github.com/yang1997434"
+  },
+  "plugins": [
+    {
+      "name": "claude-hud",
+      "source": "./claude-hud",
+      "description": "Custom HUD statusline — model, context bar, cost, subscription quotas (5h/7d/Sonnet/Opus), duration, lines, plugins/MCP.",
+      "version": "1.0.0"
+    }
+  ]
+}
