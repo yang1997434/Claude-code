@@ -1,0 +1,16 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true,
+    "superpowers@claude-plugins-official": true,
+    "planning-with-files@planning-with-files": true,
+    "frontend-design@claude-plugins-official": true,
+    "claude-mem@thedotmack": true,
+    "pyright@claude-code-lsps": true,
+    "vtsls@claude-code-lsps": true,
+    "yaml-language-server@claude-code-lsps": true,
+    "pyright-lsp@claude-plugins-official": true
+  }
+}
