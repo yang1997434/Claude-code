@@ -16,12 +16,13 @@ if ! command -v claude &> /dev/null; then
     exit 1
 fi
 
-echo "[1/7] Adding plugin marketplaces..."
+echo "[1/9] Adding plugin marketplaces..."
 claude /plugin marketplace add https://github.com/anthropics/skills
 claude /plugin marketplace add https://github.com/anthropics/claude-plugins-official
 claude /plugin marketplace add https://github.com/OthmanAdi/planning-with-files
 claude /plugin marketplace add https://github.com/thedotmack/claude-mem
 claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
+claude /plugin marketplace add https://github.com/hamelsmu/claude-review-loop
 
 echo ""
 echo "[2/7] Installing core plugins..."
@@ -38,20 +39,34 @@ echo "[4/7] Installing memory plugin (claude-mem with MCP search)..."
 claude /plugin install claude-mem@thedotmack
 
 echo ""
-echo "[5/7] Installing LSP plugins (code intelligence)..."
+echo "[5/9] Installing code review plugins..."
+claude /plugin install code-review@claude-plugins-official
+claude /plugin install pr-review-toolkit@claude-plugins-official
+claude /plugin install review-loop@hamel-review
+
+echo ""
+echo "[6/9] Installing LSP plugins (code intelligence)..."
 claude /plugin install pyright@claude-code-lsps
 claude /plugin install vtsls@claude-code-lsps
 claude /plugin install yaml-language-server@claude-code-lsps
 claude /plugin install pyright-lsp@claude-plugins-official
 
 echo ""
-echo "[6/7] Installing custom HUD statusline..."
+echo "[7/9] Installing custom HUD statusline..."
 mkdir -p ~/.claude/hud
 cp hud/custom-hud.mjs ~/.claude/hud/
 echo "  Copied hud/custom-hud.mjs -> ~/.claude/hud/"
 
 echo ""
-echo "[7/7] Applying settings..."
+echo "[8/9] Installing auto-review hooks..."
+mkdir -p ~/.claude/hooks
+cp hooks/pre-commit-review.sh ~/.claude/hooks/
+cp hooks/post-pr-review.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/pre-commit-review.sh ~/.claude/hooks/post-pr-review.sh
+echo "  Copied review hooks -> ~/.claude/hooks/"
+
+echo ""
+echo "[9/9] Applying settings..."
 cp settings.json ~/.claude/settings.json
 echo "  Copied settings.json -> ~/.claude/settings.json"
 
@@ -66,7 +81,14 @@ echo "  - superpowers        (enhanced agent capabilities)"
 echo "  - frontend-design    (UI/web design)"
 echo "  - planning-with-files (structured task planning)"
 echo "  - claude-mem         (cross-session memory + MCP search)"
+echo "  - code-review        (automated PR code review)"
+echo "  - pr-review-toolkit  (multi-agent review: code/tests/errors/types)"
+echo "  - review-loop        (Codex cross-review on task completion)"
 echo "  - pyright + vtsls    (Python & TypeScript code intelligence)"
+echo ""
+echo "Auto-review hooks:"
+echo "  - PreToolUse:  blocks git commit until code review passes"
+echo "  - PostToolUse: auto-triggers /code-review after PR creation"
 echo ""
 echo "Custom HUD statusline:"
 echo "  Model | Context bar | Cost + tokens | 5h/7d/Sonnet quotas | Duration | Lines | Plugins"
@@ -76,7 +98,7 @@ echo "  - claude-mem mcp-search  (persistent memory search)"
 echo "  - context7              (library documentation lookup)"
 echo "  - smart-search          (multi-engine web search)"
 echo ""
-echo "Restart Claude Code to activate the HUD."
+echo "Restart Claude Code to activate."
 echo ""
 echo "Optional: Install additional LSPs for other languages:"
 echo "  claude /plugin install gopls@claude-code-lsps"

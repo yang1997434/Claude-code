@@ -99,6 +99,22 @@ Restart Claude Code to activate.
 | `planning-with-files` | `planning-with-files` | Manus-style file-based planning with task_plan.md, findings.md, progress.md |
 | `claude-mem` | `thedotmack` | Cross-session persistent memory with semantic search (MCP-based) |
 
+### Code Review Plugins
+
+| Plugin | Marketplace | Description |
+|--------|-------------|-------------|
+| `code-review` | `claude-plugins-official` | Automated PR review — 5 parallel Sonnet agents with confidence scoring |
+| `pr-review-toolkit` | `claude-plugins-official` | Multi-aspect review: code, tests, errors, types, comments, simplify (Opus reviewer) |
+| `review-loop` | `hamel-review` | Codex cross-review — independent AI review on task completion |
+
+Install:
+```bash
+claude /plugin install code-review@claude-plugins-official
+claude /plugin install pr-review-toolkit@claude-plugins-official
+claude /plugin marketplace add https://github.com/hamelsmu/claude-review-loop
+claude /plugin install review-loop@hamel-review
+```
+
 ### LSP Plugins (Code Intelligence)
 
 | Plugin | Language |
@@ -176,39 +192,51 @@ Queries Kagi FastGPT + Teclis + TinyGem + Tavily simultaneously. Requires Kagi A
 
 ---
 
+## Auto-Review Hooks
+
+Automated code review gates using Claude Code hooks:
+
+| Hook | Event | Trigger | Action |
+|------|-------|---------|--------|
+| `pre-commit-review.sh` | PreToolUse (Bash) | `git commit` | Blocks commit unless code review was run (30-min marker) |
+| `post-pr-review.sh` | PostToolUse (Bash) | `gh pr create` | Auto-triggers `/code-review` on the new PR |
+
+**Flow:**
+```
+Write code → git commit → BLOCKED (no review)
+                ↓
+    code-reviewer (Opus) → fix issues → mark passed → git commit OK
+                                                        ↓
+                                                   gh pr create
+                                                        ↓
+                                                /code-review (5x Sonnet)
+```
+
+Manual install:
+```bash
+mkdir -p ~/.claude/hooks
+cp hooks/pre-commit-review.sh ~/.claude/hooks/
+cp hooks/post-pr-review.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.sh
+```
+
+---
+
 ## Settings
 
 ### `settings.json`
 
-Copy to `~/.claude/settings.json`:
+Copy to `~/.claude/settings.json` (includes hooks, HUD, and all plugins):
 
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "node ~/.claude/hud/custom-hud.mjs"
-  },
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true,
-    "superpowers@claude-plugins-official": true,
-    "planning-with-files@planning-with-files": true,
-    "frontend-design@claude-plugins-official": true,
-    "claude-mem@thedotmack": true,
-    "pyright@claude-code-lsps": true,
-    "vtsls@claude-code-lsps": true,
-    "yaml-language-server@claude-code-lsps": true,
-    "pyright-lsp@claude-plugins-official": true
-  }
-}
+```bash
+cp settings.json ~/.claude/settings.json
 ```
 
 Key settings:
-- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`: Enables multi-agent team coordination (TeamCreate, SendMessage, etc.)
+- `hooks`: Auto-review gates (PreToolUse blocks commit, PostToolUse triggers PR review)
 - `statusLine`: Custom HUD command — runs `custom-hud.mjs` to render the statusline
 - `enabledPlugins`: Plugins that are active in every session
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`: Enables multi-agent team coordination
 
 ---
 
@@ -221,6 +249,7 @@ Key settings:
 | `planning-with-files` | [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files) | File-based task planning |
 | `thedotmack` | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Persistent cross-session memory |
 | `claude-code-lsps` | [boostvolt/claude-code-lsps](https://github.com/boostvolt/claude-code-lsps) | Language server plugins (20+ languages) |
+| `hamel-review` | [hamelsmu/claude-review-loop](https://github.com/hamelsmu/claude-review-loop) | Codex cross-review loop |
 
 Add all marketplaces:
 ```bash
@@ -229,6 +258,7 @@ claude /plugin marketplace add https://github.com/anthropics/claude-plugins-offi
 claude /plugin marketplace add https://github.com/OthmanAdi/planning-with-files
 claude /plugin marketplace add https://github.com/thedotmack/claude-mem
 claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
+claude /plugin marketplace add https://github.com/hamelsmu/claude-review-loop
 ```
 
 ---
@@ -246,6 +276,10 @@ After installation, the following skills (slash commands) are available:
 | `/make-plan` | claude-mem | Create implementation plans |
 | `/do` | claude-mem | Execute a phased plan |
 | `/simplify` | superpowers | Review and simplify code |
+| `/code-review` | code-review | Automated PR review with 5 parallel Sonnet agents |
+| `/review-pr` | pr-review-toolkit | Multi-aspect review (code/tests/errors/types/simplify) |
+| `/review-loop` | review-loop | Codex cross-review loop on task completion |
+| `/cancel-review` | review-loop | Cancel an active review loop |
 | `/frontend-design` | frontend-design | Create production-grade UI |
 | `/pptx` | document-skills | Create/edit presentations |
 | `/xlsx` | document-skills | Create/edit spreadsheets |

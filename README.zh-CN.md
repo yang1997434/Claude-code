@@ -99,6 +99,22 @@ cp hud/custom-hud.mjs ~/.claude/hud/
 | `planning-with-files` | `planning-with-files` | Manus 风格文件规划（task_plan.md、findings.md、progress.md） |
 | `claude-mem` | `thedotmack` | 跨会话持久记忆 + 语义搜索（基于 MCP） |
 
+### 代码审查插件
+
+| 插件 | Marketplace | 说明 |
+|------|-------------|------|
+| `code-review` | `claude-plugins-official` | 自动 PR 审查 — 5 个并行 Sonnet agent + 置信度评分 |
+| `pr-review-toolkit` | `claude-plugins-official` | 多维度审查：代码/测试/错误/类型/注释/简化（Opus 审查员） |
+| `review-loop` | `hamel-review` | Codex 交叉审查 — 任务完成后独立 AI 审查 |
+
+安装命令：
+```bash
+claude /plugin install code-review@claude-plugins-official
+claude /plugin install pr-review-toolkit@claude-plugins-official
+claude /plugin marketplace add https://github.com/hamelsmu/claude-review-loop
+claude /plugin install review-loop@hamel-review
+```
+
 ### LSP 插件（代码智能）
 
 | 插件 | 语言 |
@@ -176,39 +192,51 @@ claude /plugin install intelephense@claude-code-lsps    # PHP
 
 ---
 
+## 自动审查 Hooks
+
+通过 Claude Code hooks 实现自动代码审查门控：
+
+| Hook | 事件 | 触发条件 | 行为 |
+|------|------|---------|------|
+| `pre-commit-review.sh` | PreToolUse (Bash) | `git commit` | 阻止提交，直到通过代码审查（30分钟标记） |
+| `post-pr-review.sh` | PostToolUse (Bash) | `gh pr create` | PR 创建后自动触发 `/code-review` |
+
+**流程：**
+```
+写代码 → git commit → 被阻止（未审查）
+                ↓
+    code-reviewer (Opus) → 修复问题 → 标记通过 → git commit 成功
+                                                    ↓
+                                               gh pr create
+                                                    ↓
+                                            /code-review (5x Sonnet)
+```
+
+手动安装：
+```bash
+mkdir -p ~/.claude/hooks
+cp hooks/pre-commit-review.sh ~/.claude/hooks/
+cp hooks/post-pr-review.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.sh
+```
+
+---
+
 ## 设置
 
 ### `settings.json`
 
-复制到 `~/.claude/settings.json`：
+复制到 `~/.claude/settings.json`（包含 hooks、HUD 和所有插件配置）：
 
-```json
-{
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "node ~/.claude/hud/custom-hud.mjs"
-  },
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true,
-    "superpowers@claude-plugins-official": true,
-    "planning-with-files@planning-with-files": true,
-    "frontend-design@claude-plugins-official": true,
-    "claude-mem@thedotmack": true,
-    "pyright@claude-code-lsps": true,
-    "vtsls@claude-code-lsps": true,
-    "yaml-language-server@claude-code-lsps": true,
-    "pyright-lsp@claude-plugins-official": true
-  }
-}
+```bash
+cp settings.json ~/.claude/settings.json
 ```
 
 关键设置说明：
-- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`：启用多 Agent 团队协作（TeamCreate、SendMessage 等）
+- `hooks`：自动审查门控（PreToolUse 阻止 commit，PostToolUse 触发 PR 审查）
 - `statusLine`：自定义 HUD 命令 — 运行 `custom-hud.mjs` 渲染状态栏
 - `enabledPlugins`：每次会话自动启用的插件
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`：启用多 Agent 团队协作
 
 ---
 
@@ -221,6 +249,7 @@ claude /plugin install intelephense@claude-code-lsps    # PHP
 | `planning-with-files` | [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files) | 文件规划 |
 | `thedotmack` | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | 持久跨会话记忆 |
 | `claude-code-lsps` | [boostvolt/claude-code-lsps](https://github.com/boostvolt/claude-code-lsps) | 语言服务器插件（20+ 语言） |
+| `hamel-review` | [hamelsmu/claude-review-loop](https://github.com/hamelsmu/claude-review-loop) | Codex 交叉审查循环 |
 
 添加所有 marketplace：
 ```bash
@@ -229,6 +258,7 @@ claude /plugin marketplace add https://github.com/anthropics/claude-plugins-offi
 claude /plugin marketplace add https://github.com/OthmanAdi/planning-with-files
 claude /plugin marketplace add https://github.com/thedotmack/claude-mem
 claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
+claude /plugin marketplace add https://github.com/hamelsmu/claude-review-loop
 ```
 
 ---
@@ -246,6 +276,10 @@ claude /plugin marketplace add https://github.com/boostvolt/claude-code-lsps
 | `/make-plan` | claude-mem | 创建实施计划 |
 | `/do` | claude-mem | 执行分阶段计划 |
 | `/simplify` | superpowers | 审查和简化代码 |
+| `/code-review` | code-review | 自动 PR 审查（5 个并行 Sonnet agent） |
+| `/review-pr` | pr-review-toolkit | 多维度审查（代码/测试/错误/类型/简化） |
+| `/review-loop` | review-loop | Codex 交叉审查循环 |
+| `/cancel-review` | review-loop | 取消正在进行的审查循环 |
 | `/frontend-design` | frontend-design | 创建生产级 UI |
 | `/pptx` | document-skills | 创建/编辑演示文稿 |
 | `/xlsx` | document-skills | 创建/编辑表格 |
