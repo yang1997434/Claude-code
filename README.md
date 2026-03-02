@@ -32,41 +32,45 @@ claude /plugin install claude-hud@Claude-code
 
 ### Screenshot
 
+4-line layout with ●○ dot progress bars, RGB true color, and vertical `|` alignment:
+
 ```
-Opus 4.6 │ ━━━───── 36% 72k/200k │ $1.15 ↑12k ↓8k │ ⏳ 5h ━━─── 42% ↻56m 7d ━──── 13% S ───── 3% │ 19m7s │ +189 -48 │ 🔧 9/26 plugins · 1 MCP
+Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
+current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
+resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
+thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
 ```
 
-### HUD Segments (Left → Right)
+### HUD Layout (4 Lines)
 
-| Segment | Example | Description |
-|---------|---------|-------------|
-| **Model** | `Opus 4.6` | Current model name, color-coded (Opus=purple, Sonnet=cyan, Haiku=green) |
-| **Context** | `━━━───── 36% 72k/200k` | Context window usage — thin progress bar + percentage + tokens used/total. Red warning ⚠ at 90%+ |
-| **Cost + Tokens** | `$1.15 ↑12k ↓8k` | Session cost + cumulative input(↑)/output(↓) tokens |
-| **5h Quota** | `5h ━━─── 42% ↻56m` | 5-hour rolling session limit — progress bar + usage% + reset countdown |
-| **7d Quota** | `7d ━──── 13%` | 7-day weekly limit (all models combined) |
-| **Sonnet Quota** | `S ───── 3%` | 7-day Sonnet-specific weekly limit |
-| **Duration** | `19m7s` | Session running time |
-| **Lines** | `+189 -48` | Lines added (green) / removed (red) in this session |
-| **Plugins** | `🔧 9/26 plugins · 1 MCP` | Enabled / installed plugins + active MCP server count |
+| Line | Content | Description |
+|------|---------|-------------|
+| **Line 1** | `Opus 4.6  72k / 200k \| 36% used 72,000 \| 64% remain 128,000` | Model (color-coded) + token ratio + used% + remain% |
+| **Line 2** | `current: ●●●○○○○○ 32% \| weekly: ●○○○○○○○ 16% \| sonnet: ○○○○○○○○ 5%` | Subscription quota bars — ●○ dot bars with usage percentage |
+| **Line 3** | `resets 6pm \| resets mar 7, 3pm \| resets mar 7, 4pm` | Reset times in local time, column-aligned under quotas |
+| **Line 4** | `thinking: Off \| cost: $11.05 ↑120k ↓85k \| 🔧 12/29 plugins · 1 MCP` | Thinking mode + session cost + plugin/MCP counts |
+
+All lines share column widths — `|` separators are vertically aligned across all 4 lines.
 
 ### Color Indicators
 
-Progress bars and percentages change color based on usage level:
+●○ dot bars and percentages change color (RGB true color) based on usage level:
 
 | Usage | Color |
 |-------|-------|
 | < 50% | Green |
 | 50–74% | Yellow |
-| 75–89% | Bright Yellow |
+| 75–89% | Orange |
 | ≥ 90% | Red (+ ⚠ warning for context) |
 
 ### How It Works
 
-- **Context, cost, tokens, duration, lines** — read from Claude Code's statusLine stdin JSON
-- **Subscription quotas (5h/7d/Sonnet)** — fetched from Anthropic OAuth API (`/api/oauth/usage`), cached locally for 60s
+- **Context, cost, tokens** — read from Claude Code's statusLine stdin JSON
+- **Subscription quotas (current/weekly/sonnet/opus)** — fetched from Anthropic OAuth API (`/api/oauth/usage`), cached locally for 60s
+- **Reset times** — displayed as local time (e.g. `6pm`, `mar 7, 3:30pm`)
+- **Thinking status** — read from `~/.claude/settings.json` (`alwaysThinkingEnabled`)
 - **Plugin/MCP counts** — read from `~/.claude/settings.json` and `~/.claude/plugins/installed_plugins.json`
-- **Credentials** — read from macOS Keychain (`Claude Code-credentials`) with file fallback, auto token refresh
+- **Credentials** — `CLAUDE_CODE_OAUTH_TOKEN` env (priority) → macOS Keychain → credentials file, with auto token refresh
 
 ### Manual Install (HUD Only)
 
