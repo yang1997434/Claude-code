@@ -1,5 +1,7 @@
 # Claude Code Configuration
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 My Claude Code plugins, MCP servers, custom HUD statusline, and settings configuration.
 
 ## Quick Install
