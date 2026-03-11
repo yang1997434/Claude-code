@@ -16,6 +16,25 @@ bash install.sh
 
 ---
 
+## 供应商切换（订阅 ↔ Bedrock）
+
+通过 Shell 别名快速切换 Claude 订阅和 AWS Bedrock。完整指南见 **[provider-switching/](provider-switching/)**。
+
+```bash
+ccb    # 用 AWS Bedrock 启动 Claude Code
+ccs    # 切回订阅
+ccw    # 查看当前供应商
+cc     # 用默认供应商启动
+```
+
+安装：
+```bash
+cp provider-switching/bedrock-switch.sh ~/.claude/
+# 在 ~/.zshrc 中添加别名（见 provider-switching/README.md）
+```
+
+---
+
 ## 自定义 HUD 状态栏
 
 轻量级状态栏，显示在 Claude Code 底部，实时展示会话信息。

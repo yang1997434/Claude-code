@@ -16,6 +16,25 @@ Or manually install each component (see below).
 
 ---
 
+## Provider Switching (Subscription ↔ Bedrock)
+
+Quick-switch between Claude Subscription and AWS Bedrock with shell aliases. See **[provider-switching/](provider-switching/)** for full guide.
+
+```bash
+ccb    # Start Claude Code with AWS Bedrock
+ccs    # Switch back to Subscription
+ccw    # Check current provider
+cc     # Start with default provider
+```
+
+Setup:
+```bash
+cp provider-switching/bedrock-switch.sh ~/.claude/
+# Add aliases to ~/.zshrc (see provider-switching/README.md)
+```
+
+---
+
 ## Custom HUD Statusline
 
 A lightweight statusline displayed at the bottom of Claude Code, showing real-time session info at a glance.
