@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 /**
- * Claude Code HUD v2.1.0 — Custom Statusline
- * 4-line grid layout with ●○ dot bars, RGB true color, vertical | alignment.
+ * Claude Code HUD v2.2.0 — Custom Statusline
+ * 4-line grid layout with RGB true color, vertical | alignment.
  *
  * Line 1: Opus 4.6  72k / 200k    | 36% used 72,000         | 64% remain 128,000
- * Line 2: current: ●●○○○○○○ 32%   | weekly: ●○○○○○○○ 16%    | sonnet: ○○○○○○○○ 5%
- * Line 3: resets 6pm               | resets mar 7, 3pm        | resets mar 7, 4pm
- * Line 4: thinking: Off            | cost: $11.05 ↑120k ↓85k | 🔧 12/29 plugins · 1 MCP
+ * Line 2: provider: Anthropic API  | ~/path/to/cwd            | git: main ✓
+ * Line 3: thinking: Off            | cost: $11.05 ↑120k ↓85k | 🔧 12/29 plugins · 1 MCP
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -14,7 +13,7 @@ import { execSync } from 'node:child_process';
 import { homedir, platform } from 'node:os';
 import { join } from 'node:path';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 
 // ── RGB True Colors ────────────────────────────────
 const rgb = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;
@@ -127,6 +126,53 @@ function dotBar(pct, width = 8) {
   return `${clr}${'●'.repeat(full)}${C.dimGray}${'○'.repeat(empty)}${C.reset}`;
 }
 
+// ── Provider Detection ───────────────────────────────
+function detectProvider(stdin) {
+  const modelId = stdin.model?.id ?? '';
+  // Bedrock model IDs contain 'us.' or region prefix patterns, or use ARN format
+  if (/^arn:/i.test(modelId)) return 'AWS Bedrock';
+  if (/^us\.|^eu\.|^ap\./.test(modelId)) return 'AWS Bedrock';
+  // Check for Vertex AI patterns
+  if (/vertex/i.test(modelId)) return 'Google Vertex';
+  // Check env for ANTHROPIC_API_KEY vs OAuth (subscription)
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey) return 'Anthropic API';
+  // Default: subscription via OAuth
+  return 'Anthropic';
+}
+
+// ── CWD Formatting ───────────────────────────────────
+function fmtCwd(cwd) {
+  if (!cwd) return '';
+  const home = HOME;
+  if (cwd.startsWith(home)) return '~' + cwd.slice(home.length);
+  return cwd;
+}
+
+// ── Git Status ───────────────────────────────────────
+function getGitStatus(cwd) {
+  if (!cwd) return null;
+  try {
+    const branch = execSync('git -C ' + JSON.stringify(cwd) + ' rev-parse --abbrev-ref HEAD 2>/dev/null', {
+      encoding: 'utf8', timeout: 1500, stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (!branch) return null;
+
+    const status = execSync('git -C ' + JSON.stringify(cwd) + ' status --porcelain 2>/dev/null', {
+      encoding: 'utf8', timeout: 1500, stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+
+    if (!status) {
+      return `${C.green}git: ${branch} ✓${C.reset}`;
+    }
+    // Count changed files
+    const lines = status.split('\n').filter(Boolean);
+    return `${C.yellow}git: ${branch} ~${lines.length}${C.reset}`;
+  } catch {
+    return null;
+  }
+}
+
 // ── Credentials ─────────────────────────────────────
 function getCredentials() {
   const envToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
@@ -185,6 +231,17 @@ function writeCache(data, error = false) {
   } catch { /* ignore */ }
 }
 
+async function fetchUsageWithToken(token) {
+  const res = await fetch('https://api.anthropic.com/api/oauth/usage', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'anthropic-beta': 'oauth-2025-04-20',
+    },
+    signal: AbortSignal.timeout(3000),
+  });
+  return res;
+}
+
 async function fetchUsage() {
   const cache = readCache();
   if (cache.fresh && cache.data) return cache.data;
@@ -198,18 +255,21 @@ async function fetchUsage() {
 
     let token = creds.accessToken;
 
+    // Proactively refresh if we know token is expired
     if (creds.expiresAt && Date.now() > creds.expiresAt && creds.refreshToken) {
       const newToken = await refreshAccessToken(creds.refreshToken);
       if (newToken) token = newToken;
     }
 
-    const res = await fetch('https://api.anthropic.com/api/oauth/usage', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'anthropic-beta': 'oauth-2025-04-20',
-      },
-      signal: AbortSignal.timeout(3000),
-    });
+    let res = await fetchUsageWithToken(token);
+
+    // If 401 (expired token), try refreshing and retry once
+    if (res.status === 401 && creds.refreshToken) {
+      const newToken = await refreshAccessToken(creds.refreshToken);
+      if (newToken) {
+        res = await fetchUsageWithToken(newToken);
+      }
+    }
 
     if (!res.ok) {
       writeCache(null, true);
@@ -317,18 +377,10 @@ function renderGrid(grid) {
 // Build 4-row grid
 // ══════════════════════════════════════════════════════
 
-function buildGrid(stdin, usage) {
+function buildGrid(stdin) {
   const settings = readSettings();
 
-  // ── Quotas ──
-  const quotaDefs = [
-    { label: 'current', data: usage?.five_hour },
-    { label: 'weekly',  data: usage?.seven_day },
-    { label: 'sonnet',  data: usage?.seven_day_sonnet },
-    { label: 'opus',    data: usage?.seven_day_opus },
-  ].filter(q => q.data);
-
-  const numCols = Math.max(3, quotaDefs.length);
+  const numCols = 3;
 
   // ── Line 1: Model + tokens | X% used N | Y% remain N ──
   const line1 = new Array(numCols).fill('');
@@ -362,28 +414,29 @@ function buildGrid(stdin, usage) {
     line1[2] = `${C.green}${remainPct}% remain ${fmtComma(remain)}${C.reset}`;
   }
 
-  // ── Line 2: Quota bars ──
+  // ── Line 2: Provider | CWD | Git status ──
   const line2 = new Array(numCols).fill('');
-  for (let i = 0; i < quotaDefs.length; i++) {
-    const q = quotaDefs[i];
-    const pct = q.data.utilization ?? 0;
-    const clr = barColor(pct);
-    line2[i] = `${C.gray}${q.label}:${C.reset} ${dotBar(pct, 8)} ${clr}${pct}%${C.reset}`;
+
+  // Col 1: Provider
+  const provider = detectProvider(stdin);
+  line2[0] = `${C.gray}provider:${C.reset} ${C.blue}${provider}${C.reset}`;
+
+  // Col 2: Current working directory
+  const cwd = stdin.workspace?.current_dir ?? stdin.cwd ?? '';
+  if (cwd) {
+    line2[1] = `${C.gray}${fmtCwd(cwd)}${C.reset}`;
   }
 
-  // ── Line 3: Reset times ──
+  // Col 3: Git status
+  const gitStr = getGitStatus(cwd);
+  if (gitStr) line2[2] = gitStr;
+
+  // ── Line 3: thinking | cost | plugins ──
   const line3 = new Array(numCols).fill('');
-  for (let i = 0; i < quotaDefs.length; i++) {
-    const resetStr = fmtResetFull(quotaDefs[i].data.resets_at);
-    if (resetStr) line3[i] = `${C.gray}resets ${resetStr}${C.reset}`;
-  }
-
-  // ── Line 4: thinking | cost | plugins ──
-  const line4 = new Array(numCols).fill('');
 
   // Col 1: thinking
   const thinkingOn = settings.alwaysThinkingEnabled === true;
-  line4[0] = thinkingOn
+  line3[0] = thinkingOn
     ? `${C.green}thinking: On${C.reset}`
     : `${C.gray}thinking: Off${C.reset}`;
 
@@ -395,7 +448,7 @@ function buildGrid(stdin, usage) {
       let s = `${C.gray}cost:${C.reset} ${C.orange}${usd}${C.reset}`;
       if (cost.total_input_tokens > 0) s += ` ${C.gray}↑${fmtTokens(cost.total_input_tokens)}${C.reset}`;
       if (cost.total_output_tokens > 0) s += ` ${C.gray}↓${fmtTokens(cost.total_output_tokens)}${C.reset}`;
-      line4[1] = s;
+      line3[1] = s;
     }
   }
 
@@ -404,18 +457,9 @@ function buildGrid(stdin, usage) {
   const pp = [];
   if (installed > 0) pp.push(`${enabled}/${installed} plugins`);
   if (mcpCount > 0) pp.push(`${mcpCount} MCP`);
-  if (pp.length > 0) line4[2] = `${C.gray}🔧 ${pp.join(' · ')}${C.reset}`;
+  if (pp.length > 0) line3[2] = `${C.gray}🔧 ${pp.join(' · ')}${C.reset}`;
 
-  // Col 4 (if exists): extra usage
-  if (usage?.extra_usage?.is_enabled && numCols >= 4) {
-    const eu = usage.extra_usage;
-    const used = eu.used_credits ?? 0;
-    const limit = eu.monthly_limit ?? 0;
-    const clr = barColor(eu.utilization ?? 0);
-    line4[3] = `${clr}extra $${used.toFixed(2)}/$${limit}${C.reset}`;
-  }
-
-  return [line1, line2, line3, line4];
+  return [line1, line2, line3];
 }
 
 // ── Main ────────────────────────────────────────────
@@ -423,8 +467,7 @@ async function main() {
   const stdin = await readStdin();
   if (!stdin) process.exit(0);
 
-  const usage = await fetchUsage();
-  const grid = buildGrid(stdin, usage);
+  const grid = buildGrid(stdin);
   const output = renderGrid(grid);
   if (!output) process.exit(0);
 

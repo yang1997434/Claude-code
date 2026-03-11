@@ -32,45 +32,44 @@ claude /plugin install claude-hud@Claude-code
 
 ### Screenshot
 
-4-line layout with ●○ dot progress bars, RGB true color, and vertical `|` alignment:
+3-line layout with RGB true color, provider detection, git status, and vertical `|` alignment:
 
 ```
-Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
-current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
-resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
-thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
+Opus 4.6  85k / 200k       | 43% used 85,124             | 57% remain 114,876
+provider: AWS Bedrock       | ~/data/Claude/catbus/web     | git: main ~39
+thinking: On                | cost: $5.76                  | 🔧 14/32 plugins · 1 MCP
 ```
 
-### HUD Layout (4 Lines)
+### HUD Layout (3 Lines)
 
 | Line | Content | Description |
 |------|---------|-------------|
-| **Line 1** | `Opus 4.6  72k / 200k \| 36% used 72,000 \| 64% remain 128,000` | Model (color-coded) + token ratio + used% + remain% |
-| **Line 2** | `current: ●●●○○○○○ 32% \| weekly: ●○○○○○○○ 16% \| sonnet: ○○○○○○○○ 5%` | Subscription quota bars — ●○ dot bars with usage percentage |
-| **Line 3** | `resets 6pm \| resets mar 7, 3pm \| resets mar 7, 4pm` | Reset times in local time, column-aligned under quotas |
-| **Line 4** | `thinking: Off \| cost: $11.05 ↑120k ↓85k \| 🔧 12/29 plugins · 1 MCP` | Thinking mode + session cost + plugin/MCP counts |
+| **Line 1** | `Opus 4.6  85k / 200k \| 43% used 85,124 \| 57% remain 114,876` | Model (color-coded) + token ratio + used% + remain% |
+| **Line 2** | `provider: AWS Bedrock \| ~/data/Claude/catbus/web \| git: main ~39` | API provider (auto-detected) + working directory + git branch & status |
+| **Line 3** | `thinking: On \| cost: $5.76 \| 🔧 14/32 plugins · 1 MCP` | Thinking mode + session cost + plugin/MCP counts |
 
-All lines share column widths — `|` separators are vertically aligned across all 4 lines.
+All lines share column widths — `|` separators are vertically aligned across all 3 lines.
 
 ### Color Indicators
 
-●○ dot bars and percentages change color (RGB true color) based on usage level:
+Percentages and model names change color (RGB true color) based on context:
 
 | Usage | Color |
 |-------|-------|
 | < 50% | Green |
-| 50–74% | Yellow |
-| 75–89% | Orange |
-| ≥ 90% | Red (+ ⚠ warning for context) |
+| 50-74% | Yellow |
+| 75-89% | Orange |
+| >= 90% | Red |
+
+Model family: Opus = magenta, Sonnet = cyan, Haiku = green. Git status: clean = green, dirty = yellow.
 
 ### How It Works
 
 - **Context, cost, tokens** — read from Claude Code's statusLine stdin JSON
-- **Subscription quotas (current/weekly/sonnet/opus)** — fetched from Anthropic OAuth API (`/api/oauth/usage`), cached locally for 60s
-- **Reset times** — displayed as local time (e.g. `6pm`, `mar 7, 3:30pm`)
+- **Provider** — auto-detected from model ID patterns (Bedrock ARN/region prefix, Vertex, API key, OAuth)
+- **Git status** — `git rev-parse` + `git status --porcelain` with 1.5s timeout
 - **Thinking status** — read from `~/.claude/settings.json` (`alwaysThinkingEnabled`)
 - **Plugin/MCP counts** — read from `~/.claude/settings.json` and `~/.claude/plugins/installed_plugins.json`
-- **Credentials** — `CLAUDE_CODE_OAUTH_TOKEN` env (priority) → macOS Keychain → credentials file, with auto token refresh
 
 ### Manual Install (HUD Only)
 

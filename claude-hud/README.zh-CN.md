@@ -1,6 +1,6 @@
-# claude-hud
-
 [English](README.md) | [中文](README.zh-CN.md)
+
+# claude-hud
 
 Claude Code 自定义 HUD 状态栏插件。
 
@@ -18,49 +18,61 @@ claude /plugin install claude-hud@Claude-code
 
 ## 显示内容
 
-4 行网格布局，●○ 圆点进度条，RGB 真彩色，`|` 垂直对齐：
+3 行网格布局，RGB 真彩色，自动检测 Provider，显示 Git 状态，`|` 垂直对齐：
 
 ```
-Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
-current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
-resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
-thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
+Opus 4.6  85k / 200k       | 43% used 85,124             | 57% remain 114,876
+provider: AWS Bedrock       | ~/data/Claude/catbus/web     | git: main ~39
+thinking: On                | cost: $5.76                  | 🔧 14/32 plugins · 1 MCP
 ```
 
 | 行 | 说明 |
 |----|------|
-| **第 1 行** | 模型（着色）+ token 比例 + 已用% + 剩余% |
-| **第 2 行** | 订阅配额 ●○ 圆点条（current / weekly / sonnet / opus） |
-| **第 3 行** | 重置时间（本地时间），与配额列对齐 |
-| **第 4 行** | 思考模式 + 会话费用 + 插件/MCP 数量 |
+| **第 1 行** | 模型名称（按系列着色）+ token 使用比例 + 已用% + 剩余% |
+| **第 2 行** | API Provider（自动检测）+ 工作目录 + Git 分支和状态 |
+| **第 3 行** | 思考模式 + 会话费用（含 I/O token 明细）+ 插件/MCP 数量 |
 
-所有行共享列宽 — `|` 分隔符在 4 行间垂直对齐。
+所有行共享列宽 — `|` 分隔符在 3 行间垂直对齐。
 
 ## 颜色指示
 
-●○ 圆点条和百分比根据使用率变色（RGB 真彩色）：
+百分比和模型名称根据上下文变色（RGB 真彩色）：
+
+**上下文使用率：**
 
 | 使用率 | 颜色 |
 |--------|------|
 | < 50% | 绿色 |
-| 50–74% | 黄色 |
-| 75–89% | 橙色 |
-| ≥ 90% | 红色（上下文还会显示 ⚠ 警告） |
+| 50-74% | 黄色 |
+| 75-89% | 橙色 |
+| >= 90% | 红色 |
+
+**模型系列：** Opus = 品红, Sonnet = 青色, Haiku = 绿色
+
+**Git 状态：** 干净 = 绿色 + 勾号, 有修改 = 黄色 + 修改数
+
+## 功能特性
+
+- **Provider 自动检测** — Anthropic API / AWS Bedrock / Google Vertex / OAuth 订阅
+- **Git 集成** — 分支名 + 修改文件数，颜色区分
+- **工作目录** — 自动用 `~` 替代 home 路径
+- **思考模式** — 开启为绿色，关闭为灰色
+- **会话费用** — 含输入/输出 token 明细（↑/↓）
+- **插件/MCP 计数** — 从设置和已安装插件读取
+- **列对齐** — 所有 `|` 分隔符在各行间完美对齐
 
 ## 工作原理
 
 - **上下文、费用、token** — 从 Claude Code statusLine 的 stdin JSON 读取
-- **订阅配额（current/weekly/sonnet/opus）** — 通过 Anthropic OAuth API 获取，本地缓存 60 秒
-- **重置时间** — 显示为本地时间（如 `6pm`、`mar 7, 3:30pm`）
+- **Provider** — 从模型 ID 模式自动检测（Bedrock ARN/区域前缀、Vertex、API Key、OAuth）
+- **Git 状态** — `git rev-parse` + `git status --porcelain`，1.5 秒超时
 - **思考状态** — 从 `~/.claude/settings.json` 读取（`alwaysThinkingEnabled`）
-- **插件/MCP 数量** — 从 `~/.claude/settings.json` 和已安装插件读取
-- **凭据** — `CLAUDE_CODE_OAUTH_TOKEN` 环境变量（优先）→ macOS Keychain → 凭据文件，支持自动刷新 token
+- **插件/MCP 数量** — 从 `~/.claude/settings.json` 和 `~/.claude/plugins/installed_plugins.json` 读取
 
 ## 系统要求
 
 - Claude Code（最新版）
 - Node.js >= 18
-- Claude Max 订阅（用于配额显示）
 
 ## 跨平台支持
 

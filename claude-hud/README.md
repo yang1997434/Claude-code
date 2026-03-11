@@ -1,6 +1,6 @@
-# claude-hud
-
 [English](README.md) | [中文](README.zh-CN.md)
+
+# claude-hud
 
 Custom HUD statusline plugin for Claude Code.
 
@@ -18,49 +18,61 @@ Restart Claude Code to activate. The HUD auto-installs on first session via Sess
 
 ## What It Shows
 
-4-line grid layout with ●○ dot progress bars, RGB true color, and vertical `|` alignment:
+3-line grid layout with RGB true color, provider detection, git status, and vertical `|` alignment:
 
 ```
-Opus 4.6  72k / 200k       | 36% used 72,000             | 64% remain 128,000
-current: ●●●○○○○○ 32%      | weekly: ●○○○○○○○ 16%        | sonnet: ○○○○○○○○ 5%
-resets 6pm                  | resets mar 7, 3pm            | resets mar 7, 4pm
-thinking: Off               | cost: $11.05 ↑120k ↓85k     | 🔧 12/29 plugins · 1 MCP
+Opus 4.6  85k / 200k       | 43% used 85,124             | 57% remain 114,876
+provider: AWS Bedrock       | ~/data/Claude/catbus/web     | git: main ~39
+thinking: On                | cost: $5.76                  | 🔧 14/32 plugins · 1 MCP
 ```
 
 | Line | Description |
 |------|-------------|
-| **Line 1** | Model (color-coded) + token ratio + used% + remain% |
-| **Line 2** | Subscription quota ●○ dot bars (current / weekly / sonnet / opus) |
-| **Line 3** | Reset times in local time, column-aligned under quotas |
-| **Line 4** | Thinking mode + session cost + plugin/MCP counts |
+| **Line 1** | Model (color-coded by family) + token usage ratio + used% + remain% |
+| **Line 2** | API provider (auto-detected) + working directory + git branch & status |
+| **Line 3** | Thinking mode + session cost (with I/O token breakdown) + plugin/MCP counts |
 
-All lines share column widths — `|` separators are vertically aligned.
+All lines share column widths — `|` separators are vertically aligned across all 3 lines.
 
 ## Color Indicators
 
-●○ dot bars and percentages change color (RGB true color) based on usage:
+Percentages and model names change color (RGB true color) based on context:
+
+**Context usage:**
 
 | Usage | Color |
 |-------|-------|
 | < 50% | Green |
-| 50–74% | Yellow |
-| 75–89% | Orange |
-| ≥ 90% | Red (+ ⚠ warning for context) |
+| 50-74% | Yellow |
+| 75-89% | Orange |
+| >= 90% | Red |
+
+**Model family:** Opus = magenta, Sonnet = cyan, Haiku = green
+
+**Git status:** Clean = green with checkmark, Dirty = yellow with change count
+
+## Features
+
+- **Provider auto-detection** — Anthropic API / AWS Bedrock / Google Vertex / OAuth subscription
+- **Git integration** — branch name + dirty file count, color-coded
+- **Working directory** — with `~` home shorthand
+- **Thinking mode** — green when on, gray when off
+- **Session cost** — with input/output token breakdown (↑/↓)
+- **Plugin/MCP counts** — reads from settings and installed plugins
+- **Column alignment** — all `|` separators perfectly aligned across rows
 
 ## How It Works
 
 - **Context, cost, tokens** — read from Claude Code's statusLine stdin JSON
-- **Subscription quotas (current/weekly/sonnet/opus)** — fetched from Anthropic OAuth API, cached locally for 60s
-- **Reset times** — displayed as local time (e.g. `6pm`, `mar 7, 3:30pm`)
+- **Provider** — auto-detected from model ID patterns (Bedrock ARN/region prefix, Vertex, API key, OAuth)
+- **Git status** — `git rev-parse` + `git status --porcelain` with 1.5s timeout
 - **Thinking status** — read from `~/.claude/settings.json` (`alwaysThinkingEnabled`)
-- **Plugin/MCP counts** — read from `~/.claude/settings.json` and installed plugins
-- **Credentials** — `CLAUDE_CODE_OAUTH_TOKEN` env (priority) → macOS Keychain → credentials file, with auto token refresh
+- **Plugin/MCP counts** — read from `~/.claude/settings.json` and `~/.claude/plugins/installed_plugins.json`
 
 ## Requirements
 
 - Claude Code (latest)
 - Node.js >= 18
-- Claude Max subscription (for quota display)
 
 ## Cross-Platform
 
