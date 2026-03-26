@@ -1,0 +1,96 @@
+# ============================================================
+# 字体
+# ============================================================
+font-family = "Maple Mono NF CN"
+font-size = 14
+font-thicken = true
+font-feature = +calt
+font-feature = +liga
+adjust-cell-height = 3
+
+# ============================================================
+# 主题 — 跟随系统亮/暗自动切换
+# ============================================================
+theme = afterglow
+
+# ============================================================
+# 窗口
+# ============================================================
+background-opacity = 0.88
+background-blur = 30
+macos-titlebar-style = hidden
+window-padding-x = 12
+window-padding-y = 10
+window-padding-balance = true
+window-padding-color = extend
+window-save-state = always
+window-inherit-working-directory = true
+window-colorspace = display-p3
+window-theme = auto
+window-width = 160
+window-height = 50
+link-url = true
+
+# ============================================================
+# 光标
+# ============================================================
+cursor-style = bar
+cursor-style-blink = false
+cursor-opacity = 1.0
+
+# ============================================================
+# 鼠标与剪贴板
+# ============================================================
+mouse-hide-while-typing = true
+copy-on-select = clipboard
+clipboard-trim-trailing-spaces = true
+focus-follows-mouse = true
+
+# ============================================================
+# Quick Terminal
+# ============================================================
+quick-terminal-position = top
+quick-terminal-screen = mouse
+quick-terminal-autohide = true
+quick-terminal-animation-duration = 0.12
+
+keybind = global:super+grave_accent=toggle_quick_terminal
+
+# ============================================================
+# 分屏
+# ============================================================
+unfocused-split-fill = #1e1e2e
+
+# ============================================================
+# Shell 集成
+# ============================================================
+shell-integration = detect
+shell-integration-features = no-cursor
+scrollback-limit = 10000000
+resize-overlay = after-first
+resize-overlay-position = bottom-right
+resize-overlay-duration = 500ms
+
+# ============================================================
+# 安全
+# ============================================================
+clipboard-paste-protection = true
+clipboard-paste-bracketed-safe = true
+
+# ============================================================
+# 快捷键 — 分屏导航 (hjkl)
+# ============================================================
+keybind = super+opt+h=goto_split:left
+keybind = super+opt+j=goto_split:bottom
+keybind = super+opt+k=goto_split:top
+keybind = super+opt+l=goto_split:right
+
+# 分屏大小调整 (40px 步进)
+keybind = super+ctrl+h=resize_split:left,40
+keybind = super+ctrl+j=resize_split:down,40
+keybind = super+ctrl+k=resize_split:up,40
+keybind = super+ctrl+l=resize_split:right,40
+
+# 均分 & 全屏
+keybind = super+shift+e=equalize_splits
+keybind = super+shift+f=toggle_split_zoom
